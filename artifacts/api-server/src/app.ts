@@ -13,7 +13,7 @@ app.set("trust proxy", 1);
 const PgSession = connectPgSimple(session);
 const sessionStore = new PgSession({
   conString: process.env.DATABASE_URL,
-  createTableIfMissing: true,
+  createTableIfMissing: false,
 });
 
 app.use(
