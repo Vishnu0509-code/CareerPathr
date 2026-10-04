@@ -4,6 +4,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://careerpathr-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "outputDirectory": "dist/public"
