@@ -1,22 +1,37 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CareerPathr API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: students
+    description: Student profile operations
+  - name: assessment
+    description: Assessment questions and submission
+  - name: careers
+    description: Career data and details
+  - name: recommendations
+    description: Career recommendations and skill gap
+  - name: courses
+    description: Courses and certifications
+  - name: questions
+    description: Admin question management
+  - name: admin
+    description: Admin dashboard operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +39,978 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ────────────────────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new student account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get currently logged-in user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── STUDENT PROFILE ─────────────────────────────────────────────────────
+
+  /students/{userId}/profile:
+    get:
+      operationId: getStudentProfile
+      tags: [students]
+      summary: Get student profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateStudentProfile
+      tags: [students]
+      summary: Update student profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── ASSESSMENT ──────────────────────────────────────────────────────────
+
+  /assessment/questions:
+    get:
+      operationId: getAssessmentQuestions
+      tags: [assessment]
+      summary: List all assessment questions
+      responses:
+        "200":
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+
+  /assessment/submit:
+    post:
+      operationId: submitAssessment
+      tags: [assessment]
+      summary: Submit assessment answers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssessmentSubmission"
+      responses:
+        "200":
+          description: Assessment processed, recommendations returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentResult"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /assessment/results/{userId}:
+    get:
+      operationId: getAssessmentResults
+      tags: [assessment]
+      summary: Get a user's latest assessment results
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assessment results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentResult"
+        "404":
+          description: No results yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── CAREERS ─────────────────────────────────────────────────────────────
+
+  /careers:
+    get:
+      operationId: listCareers
+      tags: [careers]
+      summary: List all careers
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of careers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Career"
+    post:
+      operationId: createCareer
+      tags: [careers]
+      summary: Create a new career (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerInput"
+      responses:
+        "201":
+          description: Career created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Career"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /careers/{id}:
+    get:
+      operationId: getCareer
+      tags: [careers]
+      summary: Get career details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Career details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateCareer
+      tags: [careers]
+      summary: Update a career (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerInput"
+      responses:
+        "200":
+          description: Career updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Career"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCareer
+      tags: [careers]
+      summary: Delete a career (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── RECOMMENDATIONS ─────────────────────────────────────────────────────
+
+  /recommendations/{userId}:
+    get:
+      operationId: getUserRecommendations
+      tags: [recommendations]
+      summary: Get career recommendations for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of recommendations with scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recommendation"
+
+  /recommendations/{userId}/skill-gap:
+    get:
+      operationId: getSkillGapAnalysis
+      tags: [recommendations]
+      summary: Get skill gap analysis for a user vs their top recommended career
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Skill gap analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillGapAnalysis"
+        "404":
+          description: No data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── COURSES ─────────────────────────────────────────────────────────────
+
+  /courses:
+    get:
+      operationId: listCourses
+      tags: [courses]
+      summary: List all courses (optionally filtered by careerId)
+      parameters:
+        - name: careerId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+    post:
+      operationId: createCourse
+      tags: [courses]
+      summary: Create a course recommendation (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "201":
+          description: Course created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+
+  /courses/{id}:
+    put:
+      operationId: updateCourse
+      tags: [courses]
+      summary: Update a course (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+    delete:
+      operationId: deleteCourse
+      tags: [courses]
+      summary: Delete a course (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ─── ADMIN: QUESTIONS ────────────────────────────────────────────────────
+
+  /questions:
+    get:
+      operationId: listQuestions
+      tags: [questions]
+      summary: List all assessment questions (admin)
+      responses:
+        "200":
+          description: Questions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+    post:
+      operationId: createQuestion
+      tags: [questions]
+      summary: Create an assessment question (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+
+  /questions/{id}:
+    put:
+      operationId: updateQuestion
+      tags: [questions]
+      summary: Update a question (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+    delete:
+      operationId: deleteQuestion
+      tags: [questions]
+      summary: Delete a question (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ─── ADMIN DASHBOARD ─────────────────────────────────────────────────────
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users (admin)
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+# ─── SCHEMAS ─────────────────────────────────────────────────────────────────
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    # ─── AUTH ───────────────────────────────────────────────────────────────
+
+    RegisterInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    User:
+      type: object
+      required: [id, name, email, role, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    # ─── STUDENT PROFILE ────────────────────────────────────────────────────
+
+    StudentProfile:
+      type: object
+      required: [id, userId, yearOfStudy, major, skills, interests, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        yearOfStudy:
+          type: string
+        major:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    StudentProfileInput:
+      type: object
+      required: [yearOfStudy, major, skills, interests]
+      properties:
+        yearOfStudy:
+          type: string
+        major:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+
+    # ─── ASSESSMENT ─────────────────────────────────────────────────────────
+
+    QuestionOption:
+      type: object
+      required: [value, label, careerTags]
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        careerTags:
+          type: array
+          items:
+            type: string
+
+    Question:
+      type: object
+      required: [id, text, category, options]
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        category:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionOption"
+
+    QuestionInput:
+      type: object
+      required: [text, category, options]
+      properties:
+        text:
+          type: string
+        category:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionOption"
+
+    AssessmentAnswer:
+      type: object
+      required: [questionId, selectedValue]
+      properties:
+        questionId:
+          type: integer
+        selectedValue:
+          type: string
+
+    AssessmentSubmission:
+      type: object
+      required: [userId, answers]
+      properties:
+        userId:
+          type: integer
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssessmentAnswer"
+
+    AssessmentResult:
+      type: object
+      required: [id, userId, completedAt, topCareerTags]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        completedAt:
+          type: string
+          format: date-time
+        topCareerTags:
+          type: array
+          items:
+            type: string
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssessmentAnswer"
+
+    # ─── CAREER ─────────────────────────────────────────────────────────────
+
+    Career:
+      type: object
+      required: [id, title, category, description, requiredSkills, avgSalary, growthRate, learningTimeMonths]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        avgSalary:
+          type: string
+        growthRate:
+          type: string
+        learningTimeMonths:
+          type: integer
+
+    CareerDetail:
+      type: object
+      required: [id, title, category, description, requiredSkills, avgSalary, growthRate, learningTimeMonths, jobRoles, futureOpportunities]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        avgSalary:
+          type: string
+        growthRate:
+          type: string
+        learningTimeMonths:
+          type: integer
+        jobRoles:
+          type: array
+          items:
+            type: string
+        futureOpportunities:
+          type: string
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Course"
+
+    CareerInput:
+      type: object
+      required: [title, category, description, requiredSkills, avgSalary, growthRate, learningTimeMonths, jobRoles, futureOpportunities]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        avgSalary:
+          type: string
+        growthRate:
+          type: string
+        learningTimeMonths:
+          type: integer
+        jobRoles:
+          type: array
+          items:
+            type: string
+        futureOpportunities:
+          type: string
+
+    # ─── RECOMMENDATION ─────────────────────────────────────────────────────
+
+    Recommendation:
+      type: object
+      required: [id, userId, careerId, matchScore, career]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        careerId:
+          type: integer
+        matchScore:
+          type: number
+        career:
+          $ref: "#/components/schemas/Career"
+
+    SkillGapAnalysis:
+      type: object
+      required: [careerId, careerTitle, requiredSkills, userSkills, missingSkills, matchedSkills, matchPercentage]
+      properties:
+        careerId:
+          type: integer
+        careerTitle:
+          type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        userSkills:
+          type: array
+          items:
+            type: string
+        missingSkills:
+          type: array
+          items:
+            type: string
+        matchedSkills:
+          type: array
+          items:
+            type: string
+        matchPercentage:
+          type: number
+
+    # ─── COURSE ─────────────────────────────────────────────────────────────
+
+    Course:
+      type: object
+      required: [id, careerId, title, provider, url, type, duration, level]
+      properties:
+        id:
+          type: integer
+        careerId:
+          type: integer
+        title:
+          type: string
+        provider:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [course, certification, roadmap]
+        duration:
+          type: string
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+
+    CourseInput:
+      type: object
+      required: [careerId, title, provider, url, type, duration, level]
+      properties:
+        careerId:
+          type: integer
+        title:
+          type: string
+        provider:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+          enum: [course, certification, roadmap]
+        duration:
+          type: string
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced]
+
+    # ─── ADMIN ──────────────────────────────────────────────────────────────
+
+    AdminStats:
+      type: object
+      required: [totalStudents, totalCareers, totalQuestions, totalCourses, assessmentsCompleted]
+      properties:
+        totalStudents:
+          type: integer
+        totalCareers:
+          type: integer
+        totalQuestions:
+          type: integer
+        totalCourses:
+          type: integer
+        assessmentsCompleted:
+          type: integer
+        topCareersByInterest:
+          type: array
+          items:
+            type: object
+            required: [careerTitle, count]
+            properties:
+              careerTitle:
+                type: string
+              count:
+                type: integer

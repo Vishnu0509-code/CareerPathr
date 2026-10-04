@@ -18,6 +18,11 @@ target/
 .cache/
 .local/
 
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
 # IDEs and editors
 .idea/
 .vscode/*
